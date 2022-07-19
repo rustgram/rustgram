@@ -1,0 +1,36 @@
+[package]
+name = "rustgram"
+version = "0.1.0"
+edition = "2021"
+repository = "https://gitlab.com/grammm/rustgram/rustgram"
+authors = ["Jörn Heinemann <joernheinemann@gmx.de>"]
+license = "MIT"
+description = "A fast server framework for hyper with app builder from yml file"
+
+include = [
+    "Cargo.toml",
+    "LICENSE",
+    "src/**/*",
+]
+
+[dependencies]
+hyper = { version = "0.14", features = ["server", "http1", "runtime"] }
+
+#no hasher to improve hash map
+nohash-hasher = "0.2.0"
+
+# for handler to use async function in trait
+async-trait = "0.1.53"
+
+# yml handling
+serde_yaml = "0.8"
+serde = { version = "1.0", features = ["derive"] }
+
+# router for matching url
+matchit = "0.5.0"
+
+[dev-dependencies]
+hyper = { version = "0.14", features = ["server", "http1", "runtime", "stream"] }
+tokio = { version = "1", features = ["full"] }
+# to stream the input body
+futures = { version = "0.3.6", default-features = false, features = ["async-await"] }
