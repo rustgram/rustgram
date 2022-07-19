@@ -38,29 +38,29 @@ use rustgram::{r, Router, Request,Response};
 use std::net::SocketAddr;
 
 async fn not_found_handler(_req: Request) -> Response
-{
-	return hyper::Response::builder()
-		.status(StatusCode::NOT_FOUND)
-		.body("Not found".into())
-		.unwrap();
+{ 
+    return hyper::Response::builder()
+        .status(StatusCode::NOT_FOUND)
+        .body("Not found".into())
+        .unwrap();
 }
 
 pub async fn test_handler(_req: Request) -> String
-{
-	format!("test called")
+{ 
+    format!("test called")
 }
 
 #[tokio::main]
 async fn main()
-{
-	let mut router = Router::new(crate::not_found_handler);
-	router.get("/", r(test_handler));
-	router.get("/api", r(test_handler));
-
-	let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-
-	//start the app
-	rustgram::start(router, addr).await;
+{ 
+    let mut router = Router::new(crate::not_found_handler);
+    router.get("/", r(test_handler));
+    router.get("/api", r(test_handler));
+    
+    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    
+    //start the app
+    rustgram::start(router, addr).await;
 }
 ````
 
@@ -82,91 +82,91 @@ use rustgram::{Request, Response};
 
 //define a middleware service
 pub struct Middleware<S>
-{
-	inner: S,   //space the inner service to call it later
+{ 
+    inner: S,   //space the inner service to call it later
 }
 
 #[async_trait]
-impl<S: Send + Sync + 'static> Service<Request> for Middleware<S>
-	where
-		S: Service<Request, Response = Response>, //define the return types from the next service
-{
-	type Response = Response;
-
-	async fn call(&self, req: Request) -> Self::Response
-	{
+impl<S: Send + Sync + 'static> Service<Request> for Middleware<S> 
+where 
+    S: Service<Request, Response = Response>, //define the return types from the next service
+{ 
+    type Response = Response;
+    
+    async fn call(&self, req: Request) -> Self::Response 
+    {
 		// before the request handler from the router is called
-		self.inner.call(req).await  //call the next handler 
+        self.inner.call(req).await  //call the next handler 
 		// after the request handler is called with the response 
-	}
+    }
 }
 
 //define a middleware transform
 pub struct MiddlewareTransform;
 
-impl<S> ServiceTransform<S> for MiddlewareTransform
-	where
-		S: Service<Request, Response = Response>, //define the return types from the next service
-{
-	type Service = Middleware<S>;
-
-	fn transform(&self, inner: S) -> Self::Service
-	{
-		Middleware {
-			inner,
-		}
-	}
+impl<S> ServiceTransform<S> for MiddlewareTransform 
+where 
+    S: Service<Request, Response = Response>, //define the return types from the next service
+{ 
+    type Service = Middleware<S>;
+    
+    fn transform(&self, inner: S) -> Self::Service 
+    { 
+        Middleware { 
+            inner, 
+        } 
+    }
 }
 
 //or define a middleware transform with a function
 pub fn middleware_transform<S>(inner: S) -> Middleware<S>
-{
-	Middleware {
-		inner,
-	}
+{ 
+    Middleware { 
+        inner, 
+    }
 }
 
 async fn not_found_handler(_req: Request) -> Response
-{
-	return hyper::Response::builder()
-		.status(StatusCode::NOT_FOUND)
-		.body("Not found".into())
-		.unwrap();
+{ 
+    return hyper::Response::builder()
+        .status(StatusCode::NOT_FOUND)
+        .body("Not found".into())
+        .unwrap();
 }
 
 pub async fn test_handler(_req: Request) -> String
-{
-	format!("test called")
+{ 
+    format!("test called")
 }
 
 //Apply a middleware to a route after the r function
 
 #[tokio::main]
 async fn main()
-{
-	let mut router = Router::new(crate::not_found_handler);
-	router.get("/", r(test_handler)
-		.add(middleware_transform)
-	);
-
-	router.get("/api", r(test_handler)
-		.add(MiddlewareTransform)
-	);
-
-	//apply multiple middleware to a route
-	router.get("/multiple", r(test_handler)
-		.add(MiddlewareTransform)   //then this at last
-		.add(middleware_transform)  //then this ^
-		.add(middleware_transform)  //then this ^
-		.add(middleware_transform)  //then this ^
-		.add(middleware_transform)  //then this ^
-		.add(middleware_transform)  //this is called first ^
-	);
-
-	let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-
-	//start the app
-	rustgram::start(router, addr).await;
+{ 
+    let mut router = Router::new(crate::not_found_handler);
+    router.get("/", r(test_handler)
+        .add(middleware_transform)
+    );
+    
+    router.get("/api", r(test_handler)
+        .add(MiddlewareTransform)
+    );
+    
+    //apply multiple middleware to a route
+    router.get("/multiple", r(test_handler)
+        .add(MiddlewareTransform)   //then this at last
+        .add(middleware_transform)  //then this ^
+        .add(middleware_transform)  //then this ^
+        .add(middleware_transform)  //then this ^
+        .add(middleware_transform)  //then this ^
+        .add(middleware_transform)  //this is called first ^
+    );
+    
+    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    
+    //start the app
+    rustgram::start(router, addr).await;
 }
 ````
 
@@ -221,14 +221,15 @@ impl GramHttpErr<Response> for HttpErr
         //the msg for the end user
         let msg = format!(
             "{{\"status\": {}, \"error_message\": \"{}\"}}", 
-            self.api_error_code, self.msg);
+            self.api_error_code, self.msg
+        );
         
         hyper::Response::builder()
             .status(status)
             .header("Content-Type", "application/json")
             .body(hyper::Body::from(msg))
-            .unwrap() 
-    }
+            .unwrap()
+	}
 }
 
 //example usage:
@@ -263,13 +264,13 @@ Open the main function in `src/main.rs`
 use rustgram::route_parser;
 
 fn main()
-{
-	//input path: from the root of the current working directory
-	//output path: into the app crate (created via cargo new app)
-	route_parser::start(
-		"routes.yml".to_string(),
-		"app/src/routes.rs".to_string()
-	);
+{ 
+//input path: from the root of the current working directory 
+// output path: into the app crate (created via cargo new app)
+    route_parser::start(
+        "routes.yml".to_string(), 
+        "app/src/routes.rs".to_string()
+    );
 }
 ````
 
@@ -357,51 +358,51 @@ use crate::test_handler::*;
 use crate::test_mw::*;
 
 pub(crate) fn routes() -> Router
-{
-	let mut router = Router::new(crate::not_found_handler);
-	router.get("/", r(test_handler::test_handler));
-
-	router.put(
-		"/",
-		r(test_handler::test_handler)
-			.add(mw1_transform)
-			.add(mw_transform),
-	);
-
-	router.get(
-		"/admin",
-		r(test_handler_db::test_handler_db_to_json)
-			.add(mw1_transform)
-			.add(mw_transform),
-	);
-
-	router.get(
-		"/admin/user/:id",
-		r(test_handler::test_handler)
-			.add(mw1_transform)
-			.add(mw_transform),
-	);
-
-	router.put(
-		"/admin/many_mw",
-		r(test_handler::test_handler)
-			.add(mw3_transform)
-			.add(mw2_transform)
-			.add(mw1_transform)
-			.add(mw_transform),
-	);
-
-	router.put(
-		"/nested/management/put",
-		r(test_handler::test_handler)
-			.add(mw5_transform)
-			.add(mw4_transform)
-			.add(mw3_transform)
-			.add(mw2_transform)
-			.add(mw1_transform)
-			.add(mw_transform),
-	);
-
-	router
+{ 
+    let mut router = Router::new(crate::not_found_handler);
+    router.get("/", r(test_handler::test_handler));
+    
+    router.put(
+        "/", 
+        r(test_handler::test_handler)
+            .add(mw1_transform)
+            .add(mw_transform), 
+    );
+    
+    router.get(
+        "/admin", 
+        r(test_handler_db::test_handler_db_to_json)
+            .add(mw1_transform)
+            .add(mw_transform), 
+    );
+    
+    router.get(
+        "/admin/user/:id", 
+        r(test_handler::test_handler)
+            .add(mw1_transform)
+            .add(mw_transform), 
+    );
+    
+    router.put(
+        "/admin/many_mw", 
+        r(test_handler::test_handler)
+            .add(mw3_transform)
+            .add(mw2_transform)
+            .add(mw1_transform)
+            .add(mw_transform), 
+    );
+    
+    router.put(
+        "/nested/management/put", 
+        r(test_handler::test_handler)
+            .add(mw5_transform)
+            .add(mw4_transform)
+            .add(mw3_transform)
+            .add(mw2_transform)
+            .add(mw1_transform)
+            .add(mw_transform), 
+    );
+    
+    router
 }
 ````
