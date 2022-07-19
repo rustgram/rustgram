@@ -83,7 +83,9 @@ pub type Request = hyper::Request<hyper::Body>;
 /**
 # Start listen for incoming connections
 
-Build the hyper service and on connection, start the router matcher
+Build the hyper service and on connection, start the router matcher.
+
+Build http 1.1 server.
 */
 pub async fn start(router: Router, addr: SocketAddr)
 {
