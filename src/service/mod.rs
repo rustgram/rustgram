@@ -1,4 +1,4 @@
-use async_trait::async_trait;
+use std::future::Future;
 
 pub(crate) mod gram_error;
 mod handler;
@@ -23,12 +23,12 @@ The only purpose is to get the request and return a response.
 	- see gram_err for more details
 
 */
-#[async_trait]
-pub trait Service<R>: Send + Sync + 'static
+pub trait Service<R>: Send
 {
-	type Response;
+	type Output;
+	type Future: Future<Output = Self::Output> + Send;
 
-	async fn call(&self, req: R) -> Self::Response;
+	fn call(&self, req: R) -> Self::Future;
 }
 
 /**
