@@ -14,10 +14,6 @@ hyper = { version = "0.14", features = ["full"] }
 # tokio for the async main fn
 tokio = { version = "1", features = ["full"] }
 
-# for implementing async trait functions. 
-# this can be replaced when generic_associated_types and type_alias_impl_trait are stable 
-async-trait = "0.1.53"
-
 # rustgram
 rustgram = "0.1"
 ````
@@ -76,7 +72,6 @@ The middleware stack is build like a service call stack.
 The Order of the middleware stack is reverse to the applied order.
 
 ````rust
-use async_trait::async_trait;
 use rustgram::service::{Service, ServiceTransform};
 use rustgram::{Request, Response};
 
@@ -86,17 +81,17 @@ pub struct Middleware<S>
     inner: S,   //space the inner service to call it later
 }
 
-#[async_trait]
 impl<S: Send + Sync + 'static> Service<Request> for Middleware<S> 
 where 
-    S: Service<Request, Response = Response>, //define the return types from the next service
-{ 
-    type Response = Response;
+    S: Service<Request, Output = Response>, //define the return types from the next service
+{
+	type Output = S::Output;
+	type Future = S::Future;
     
-    async fn call(&self, req: Request) -> Self::Response 
+    fn call(&self, req: Request) -> Self::Future 
     {
 		// before the request handler from the router is called
-        self.inner.call(req).await  //call the next handler 
+        self.inner.call(req)  //call the next handler 
 		// after the request handler is called with the response 
     }
 }
@@ -167,6 +162,100 @@ async fn main()
     
     //start the app
     rustgram::start(router, addr).await;
+}
+````
+
+#### Middleware with async handling
+
+If work must be done before the req handling or after the response, a Box Future is needed
+
+When calling async actions before the response, here Arc is needed to avoid lifetime issues:
+
+- use a Pin Box feature
+- use inner service as an arc pointer
+- clone the arc pointer before calling the async block
+- do the async action in the async block
+
+````rust
+use std::future::Future;
+use std::pin::Pin;
+use std::sync::Arc;
+
+use rustgram::service::{Service, ServiceTransform};
+use rustgram::{Request, Response};
+
+pub struct Middleware<S>
+{
+	inner: Arc<S>,   //use Arc here to avoid lifetime issues
+}
+
+impl<S: Send + Sync + 'static> Service<Request> for Middleware<S> 
+where 
+    S: Service<Request, Output = Response>,
+{ 
+    type Output = S::Output;
+    type Future = Pin<Box<dyn Future<Output = Self::Output> + Send>>;
+    
+    fn call(&self, req: Request) -> Self::Future 
+    { 
+        //must clone the service to call it in the async move block. (we are cloning the arc ref, to avoid lifetime issues)
+        let next = self.inner.clone();
+        
+        Box::pin(async move { 
+            //do async fn before req
+            
+            next.call(req).await 
+            //do async fn after req 
+        }) 
+    }
+}
+
+pub fn mw_transform<S>(inner: S) -> Middleware<S>
+{
+	Middleware { 
+        inner: Arc::new(inner), //use Arc here!
+    }
+}
+````
+
+Only after response async action:
+
+````rust
+use rustgram::service::{Service, ServiceTransform};
+use rustgram::{Request, Response};
+
+pub struct Middleware<S>
+{
+	inner: Arc<S>,   //use Arc here to avoid lifetime issues
+}
+
+impl<S: Send + Sync + 'static> Service<Request> for Middleware<S>
+	where
+		S: Service<Request, Output = Response>,
+{ 
+    type Output = S::Output;
+    type Future = Pin<Box<dyn Future<Output = Self::Output> + Send>>;
+    
+    fn call(&self, req: Request) -> Self::Future 
+    { 
+        //no Arc cloning needed because we move the feature into the async block
+        //but change the req is not possible here
+        let res = self.inner.call(req);
+        
+        Box::pin(async move { 
+            let res = res.await; 
+            //do async fn after req 
+            
+            res
+        }) 
+    }
+}
+
+pub fn mw_transform<S>(inner: S) -> Middleware<S>
+{
+	Middleware { 
+        inner, //no Arc here!
+    }
 }
 ````
 
