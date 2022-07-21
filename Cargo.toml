@@ -10,6 +10,7 @@ description = "A fast server framework for hyper with app builder from yml file"
 include = [
     "Cargo.toml",
     "LICENSE",
+    "README.md",
     "src/**/*",
 ]
 
