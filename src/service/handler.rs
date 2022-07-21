@@ -1,6 +1,6 @@
 use std::future::Future;
+use std::pin::Pin;
 
-use async_trait::async_trait;
 use hyper::StatusCode;
 
 use crate::service::gram_error::{GramHttpErr, GramStdHttpErr};
@@ -10,26 +10,31 @@ use crate::{Request, Response};
 //__________________________________________________________________________________________________
 //framework specific function implementation
 
-#[async_trait]
-impl<R: Send + Sync + 'static, F: Send + Sync + 'static, Fut> Service<R> for F
+impl<R: Send, F, Fut> Service<R> for F
 where
-	F: Fn(R) -> Fut,
+	F: Fn(R) -> Fut + Send + Sync,
 	Fut: Future + Send + 'static,
 	Fut::Output: IntoResponse<Response>,
 {
-	type Response = Response;
+	type Output = Response;
+	type Future = Pin<Box<dyn Future<Output = Self::Output> + Send>>;
 
-	async fn call(&self, req: R) -> Self::Response
+	fn call(&self, req: R) -> Self::Future
 	{
-		(self)(req).await.into_response()
+		let res = (self)(req);
+
+		Box::pin(async move {
+			//future
+			res.await.into_response()
+		})
 	}
 }
 
-impl<S, F: Send + Sync + 'static, S1: Send + Sync + 'static> ServiceTransform<S> for F
+impl<'a, S, F: Send + Sync + 'static, S1: Send + Sync + 'static> ServiceTransform<S> for F
 where
-	S: Service<Request, Response = Response>, //define the return types from the next service
+	S: Service<Request, Output = Response> + Send, //define the return types from the next service
 	F: Fn(S) -> S1,
-	S1: Service<Request, Response = Response>,
+	S1: Service<Request, Output = Response> + Send,
 {
 	type Service = S1;
 
