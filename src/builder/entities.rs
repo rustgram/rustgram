@@ -98,8 +98,8 @@ pub(crate) enum Config
 #[derive(Serialize, Deserialize, Debug)]
 pub(crate) struct GramRoute
 {
-	pub(crate) base_handler: String,
-	pub(crate) base_mw: String,
+	pub(crate) base_handler: Option<String>,
+	pub(crate) base_mw: Option<String>,
 	pub(crate) prefix: String,
 	pub(crate) handler_404: Option<String>,
 	pub(crate) mw: Mw,

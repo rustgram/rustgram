@@ -1,7 +1,17 @@
 use crate::builder::entities::Route;
 
-pub(crate) fn build_routes(routes: Vec<Route>, std_service: String, std_mw: String, handler_404: Option<String>) -> String
+pub(crate) fn build_routes(routes: Vec<Route>, std_service: Option<String>, std_mw: Option<String>, handler_404: Option<String>) -> String
 {
+	let std_service = match std_service {
+		None => String::new(),
+		Some(s) => format!("use crate::{}::*;", s),
+	};
+
+	let std_mw = match std_mw {
+		None => String::new(),
+		Some(s) => format!("use crate::{}::*;", s),
+	};
+
 	let route_404 = match handler_404 {
 		Some(h) => h,
 		None => {
@@ -30,8 +40,8 @@ Please do not modify this file. Any changes will be overridden by the next route
 Use the returned router instead
  */
 use rustgram::{{r, Router}};
-use crate::{}::*;
-use crate::{}::*;
+{}
+{}
 
 pub(crate) fn routes() -> Router
 {{
