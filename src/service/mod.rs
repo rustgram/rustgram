@@ -23,7 +23,7 @@ The only purpose is to get the request and return a response.
 	- see gram_err for more details
 
 */
-pub trait Service<R>: Send
+pub trait Service<R>: Send + Sync + 'static
 {
 	type Output;
 	type Future: Future<Output = Self::Output> + Send;

@@ -12,7 +12,7 @@ use crate::{Request, Response};
 
 impl<R: Send, F, Fut> Service<R> for F
 where
-	F: Fn(R) -> Fut + Send + Sync,
+	F: Fn(R) -> Fut + Send + Sync + 'static,
 	Fut: Future + Send + 'static,
 	Fut::Output: IntoResponse<Response>,
 {

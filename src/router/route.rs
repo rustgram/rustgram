@@ -17,7 +17,7 @@ pub(crate) trait Route<Req>: Send + Sync
 
 pub struct GramRoute<S: 'static, Req, Res>
 where
-	S: Service<Req, Output = Res> + 'static + Sync,
+	S: Service<Req, Output = Res>,
 	Req: Send + Sync,
 	Res: Send + Sync,
 {
@@ -44,7 +44,7 @@ where
 	pub fn add<S1, T, Req1, Res1>(self, middleware: T) -> GramRoute<S1, Req1, Res1>
 	where
 		T: ServiceTransform<S, Service = S1> + Send + Sync + 'static,
-		S1: Service<Req1, Output = Res1> + Send + Sync + 'static,
+		S1: Service<Req1, Output = Res1>,
 		Req1: Send + Sync,
 		Res1: Send + Sync,
 	{
@@ -59,7 +59,7 @@ where
 #[async_trait]
 impl<S, Req, Res> Route<Req> for GramRoute<S, Req, Res>
 where
-	S: Service<Req, Output = Res> + 'static + Sync,
+	S: Service<Req, Output = Res>,
 	Req: Send + Sync,
 	Res: Send + Sync,
 {
@@ -78,7 +78,7 @@ where
 */
 pub fn r<S, Req, Res>(service: S) -> GramRoute<S, Req, Res>
 where
-	S: Service<Req, Output = Res> + 'static + Sync,
+	S: Service<Req, Output = Res>,
 	Req: Send + Sync,
 	Res: Send + Sync,
 {

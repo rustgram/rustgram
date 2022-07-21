@@ -59,7 +59,7 @@ where
 {
 	pub fn new<S>(route_404: S) -> Self
 	where
-		S: Service<Req, Output = Res> + 'static + Sync,
+		S: Service<Req, Output = Res>,
 	{
 		Self {
 			routes: HashMap::with_hasher(BuildHasherDefault::default()),
@@ -87,7 +87,7 @@ where
 	*/
 	pub fn insert<S: 'static>(&mut self, method: Method, path: &str, route: GramRoute<S, Req, Res>)
 	where
-		S: Service<Req, Output = Res> + 'static + Sync,
+		S: Service<Req, Output = Res>,
 	{
 		let path = self.prefix.to_string() + path;
 		self.latest_route_id += 1;
@@ -127,7 +127,7 @@ where
 	*/
 	pub fn get<S>(&mut self, path: &str, route: GramRoute<S, Req, Res>)
 	where
-		S: Service<Req, Output = Res> + 'static + Sync,
+		S: Service<Req, Output = Res>,
 	{
 		self.insert(Method::GET, path, route)
 	}
@@ -138,7 +138,7 @@ where
 	 */
 	pub fn post<S>(&mut self, path: &str, route: GramRoute<S, Req, Res>)
 	where
-		S: Service<Req, Output = Res> + 'static + Sync,
+		S: Service<Req, Output = Res>,
 	{
 		self.insert(Method::POST, path, route)
 	}
@@ -149,7 +149,7 @@ where
 	 */
 	pub fn put<S>(&mut self, path: &str, route: GramRoute<S, Req, Res>)
 	where
-		S: Service<Req, Output = Res> + 'static + Sync,
+		S: Service<Req, Output = Res>,
 	{
 		self.insert(Method::PUT, path, route)
 	}
@@ -160,7 +160,7 @@ where
 	 */
 	pub fn patch<S>(&mut self, path: &str, route: GramRoute<S, Req, Res>)
 	where
-		S: Service<Req, Output = Res> + 'static + Sync,
+		S: Service<Req, Output = Res>,
 	{
 		self.insert(Method::PATCH, path, route)
 	}
@@ -171,7 +171,7 @@ where
 	 */
 	pub fn delete<S>(&mut self, path: &str, route: GramRoute<S, Req, Res>)
 	where
-		S: Service<Req, Output = Res> + 'static + Sync,
+		S: Service<Req, Output = Res>,
 	{
 		self.insert(Method::DELETE, path, route)
 	}
@@ -182,7 +182,7 @@ where
 	 */
 	pub fn options<S>(&mut self, path: &str, route: GramRoute<S, Req, Res>)
 	where
-		S: Service<Req, Output = Res> + 'static + Sync,
+		S: Service<Req, Output = Res>,
 	{
 		self.insert(Method::OPTIONS, path, route)
 	}
@@ -193,7 +193,7 @@ where
 	 */
 	pub fn head<S>(&mut self, path: &str, route: GramRoute<S, Req, Res>)
 	where
-		S: Service<Req, Output = Res> + 'static + Sync,
+		S: Service<Req, Output = Res>,
 	{
 		self.insert(Method::HEAD, path, route)
 	}
@@ -204,7 +204,7 @@ where
 	 */
 	pub fn trace<S>(&mut self, path: &str, route: GramRoute<S, Req, Res>)
 	where
-		S: Service<Req, Output = Res> + 'static + Sync,
+		S: Service<Req, Output = Res>,
 	{
 		self.insert(Method::TRACE, path, route)
 	}
@@ -215,7 +215,7 @@ where
 	 */
 	pub fn connect<S>(&mut self, path: &str, route: GramRoute<S, Req, Res>)
 	where
-		S: Service<Req, Output = Res> + 'static + Sync,
+		S: Service<Req, Output = Res>,
 	{
 		self.insert(Method::CONNECT, path, route)
 	}
