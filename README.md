@@ -339,12 +339,19 @@ pub async fn test_handler_err(_req: Request) -> Result<String, HttpErr>
 1. Create a 2nd bin crate for the route builder.
 2. This crate calls the builder function
 3. Set the input and the output path (both relative to the current working directory)
-4. Build and execute the route builder everytime the routes are changed
-5. use the route function, from the new file, to get the router
+4. install rustgram with the route_builder feature
+5. Build and execute the route builder everytime the routes are changed
+6. use the route function, from the new file, to get the router
 
 ````shell
 # in a workspace just create a new crate
 cargo new route_builder
+````
+
+In the Cargo-toml file:
+
+````toml
+rustgram = { version = "0.1", features = ["route_builder"] }
 ````
 
 Open the main function in `src/main.rs`

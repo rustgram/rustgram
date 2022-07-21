@@ -34,6 +34,7 @@
 //! }
 //! ````
 
+#[cfg(feature = "route_builder")]
 mod builder;
 mod router;
 pub mod service;
@@ -47,6 +48,7 @@ use hyper::Server;
 pub use router::route::{r, RouteParams};
 pub use service::gram_error::{GramHttpErr, GramStdHttpErr};
 
+#[cfg(feature = "route_builder")]
 pub use self::builder::route_parser;
 use crate::router::Router as CoreRouter;
 
