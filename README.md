@@ -81,7 +81,7 @@ pub struct Middleware<S>
     inner: S,   //space the inner service to call it later
 }
 
-impl<S: Send + Sync + 'static> Service<Request> for Middleware<S> 
+impl<S> Service<Request> for Middleware<S> 
 where 
     S: Service<Request, Output = Response>, //define the return types from the next service
 {
@@ -101,7 +101,7 @@ pub struct MiddlewareTransform;
 
 impl<S> ServiceTransform<S> for MiddlewareTransform 
 where 
-    S: Service<Request, Response = Response>, //define the return types from the next service
+    S: Service<Request, Output = Response>, //define the return types from the next service
 { 
     type Service = Middleware<S>;
     
@@ -189,7 +189,7 @@ pub struct Middleware<S>
 	inner: Arc<S>,   //use Arc here to avoid lifetime issues
 }
 
-impl<S: Send + Sync + 'static> Service<Request> for Middleware<S> 
+impl<S> Service<Request> for Middleware<S> 
 where 
     S: Service<Request, Output = Response>,
 { 
@@ -229,7 +229,7 @@ pub struct Middleware<S>
 	inner: Arc<S>,   //use Arc here to avoid lifetime issues
 }
 
-impl<S: Send + Sync + 'static> Service<Request> for Middleware<S>
+impl<S> Service<Request> for Middleware<S>
 	where
 		S: Service<Request, Output = Response>,
 { 
