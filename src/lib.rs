@@ -1,39 +1,5 @@
-//! # rustgram
-//! A fast server framework for [hyper](https://github.com/hyperium/hyper)
-//!
-//! This framework provides a full automatic app builder from yml files
-//!
-//! ````ignore
-//! use rustgram::{r, Router, Request, Response};
-//! use std::net::SocketAddr;
-//!
-//! async fn not_found_handler(_req: Request) -> Response
-//! {
-//! 	return hyper::Response::builder()
-//! 		.status(hyper::StatusCode::NOT_FOUND)
-//! 		.body("Not found".into())
-//! 		.unwrap();
-//! }
-//!
-//! pub async fn test_handler(_req: Request) -> String
-//! {
-//! 	format!("test called")
-//! }
-//!
-//! #[tokio::main]
-//! async fn main()
-//! {
-//! 	let mut router = Router::new(not_found_handler);
-//! 	router.get("/", r(test_handler));
-//! 	router.get("/api", r(test_handler));
-//!
-//! 	let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-//!
-//! 	//start the app
-//! 	rustgram::start(router, addr).await;
-//! }
-//! ````
-
+#[doc = include_str!("../README.md")]
+//
 #[cfg(feature = "route_builder")]
 mod builder;
 mod router;
