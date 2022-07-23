@@ -4,7 +4,7 @@ use std::pin::Pin;
 use hyper::StatusCode;
 
 use crate::service::gram_error::{GramHttpErr, GramStdHttpErr};
-use crate::service::{IntoResponse, Service, ServiceTransform};
+use crate::service::{HttpResult, IntoResponse, Service, ServiceTransform};
 use crate::{Request, Response};
 
 //__________________________________________________________________________________________________
@@ -90,6 +90,20 @@ where
 	{
 		match self {
 			Ok(s) => s.into_response(),
+			Err(e) => e.get_res(),
+		}
+	}
+}
+
+impl<R, E> IntoResponse<Response> for Result<R, E>
+where
+	R: HttpResult<Response>,
+	E: GramHttpErr<Response>,
+{
+	fn into_response(self) -> Response
+	{
+		match self {
+			Ok(s) => s.get_res(),
 			Err(e) => e.get_res(),
 		}
 	}
