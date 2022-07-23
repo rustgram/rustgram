@@ -38,7 +38,11 @@ impl Display for GramStdHttpErr
 {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result
 	{
-		write!(f, "Http Error with status code: {} and Message: {}", self.status, self.msg)
+		write!(
+			f,
+			"Http Error with status code: {} and Message: {}",
+			self.status, self.msg
+		)
 	}
 }
 
