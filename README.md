@@ -30,6 +30,7 @@ rustgram = "0.1"
 3. enter the socket address to listen for connection
 
 ````rust
+use hyper::StatusCode;
 use rustgram::{r, Router, Request,Response};
 use std::net::SocketAddr;
 
@@ -72,6 +73,7 @@ The middleware stack is build like a service call stack.
 The Order of the middleware stack is reverse to the applied order.
 
 ````rust
+use hyper::StatusCode;
 use rustgram::service::{Service, ServiceTransform};
 use rustgram::{Request, Response};
 
@@ -221,12 +223,15 @@ pub fn mw_transform<S>(inner: S) -> Middleware<S>
 Only after response async action:
 
 ````rust
+use std::future::Future;
+use std::pin::Pin;
+
 use rustgram::service::{Service, ServiceTransform};
 use rustgram::{Request, Response};
 
 pub struct Middleware<S>
 {
-	inner: Arc<S>,   //use Arc here to avoid lifetime issues
+	inner: S,
 }
 
 impl<S> Service<Request> for Middleware<S>
@@ -368,9 +373,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 pub struct ResultMsg(pub String);
 
-pub async fn test_handler_json_result(_req: Request) -> JRes<ResultMsg>
-{ 
-    Ok(JsonResult(ResultMsg(String::from("Hello world"))))
+pub async fn test_handler_json_result(_req: Request) -> Result<JsonResult<ResultMsg>, HttpErr>
+{
+	Ok(JsonResult(ResultMsg(String::from("Hello world"))))
 }
 ````
 
