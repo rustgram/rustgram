@@ -1,5 +1,5 @@
 # Rustgram
-##### A lightweight, fast and easy to use http routing and middleware framework build on top of hyper
+##### A lightweight, fast and easy to use http routing and middleware framework build on top of [hyper](https://github.com/hyperium/hyper)
 
 ### Features
 - build routes and middleware like Tower services
@@ -270,6 +270,7 @@ Supported returns are:
 - &'static str
 - Result<String, GramStdHttpErr>
 - Result<String, E>
+- Result<R, E>
 
 The GramStdHttpErr gets converted into a hyper response.
 
@@ -326,6 +327,50 @@ impl GramHttpErr<Response> for HttpErr
 pub async fn test_handler_err(_req: Request) -> Result<String, HttpErr>
 { 
     Err(HttpErr::new(400,1,"Input not valid"))
+}
+````
+
+#### Result<R, E>
+
+R can be any type which implements HttpResult.
+
+Example to return a json string:
+
+````rust
+use rustgram::service::HttpResult;
+use rustgram::{GramHttpErr, Response, Request};
+use serde::Serialize;
+use serde_json::to_string;
+
+pub struct JsonResult<T: ?Sized + Serialize>(pub T);
+
+impl<T: ?Sized + Serialize> HttpResult<Response> for JsonResult<T>
+{ 
+    fn get_res(&self) -> Response 
+    { 
+        //to string from serde_json
+        let string = match to_string(&self.0) { 
+            Ok(s) => s, 
+            //the Http err from the previous example
+            Err(_e) => return HttpErr::new(422,1,"Json to string error",None).get_res(), 
+        };
+        
+        hyper::Response::builder()
+            .header("Content-Type", "application/json")
+            .body(string.into())
+            .unwrap() 
+    }
+}
+
+//in another file
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
+pub struct ResultMsg(pub String);
+
+pub async fn test_handler_json_result(_req: Request) -> JRes<ResultMsg>
+{ 
+    Ok(JsonResult(ResultMsg(String::from("Hello world"))))
 }
 ````
 
