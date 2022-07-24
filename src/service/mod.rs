@@ -67,5 +67,5 @@ pub trait IntoResponse<Res>
 
 pub trait HttpResult<Res>
 {
-	fn get_res(&self) -> Res;
+	fn get_res(self) -> Res;
 }

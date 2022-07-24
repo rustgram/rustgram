@@ -347,11 +347,11 @@ use rustgram::{GramHttpErr, Response, Request};
 use serde::Serialize;
 use serde_json::to_string;
 
-pub struct JsonResult<T: ?Sized + Serialize>(pub T);
+pub struct JsonResult<T: Serialize>(pub T);
 
-impl<T: ?Sized + Serialize> HttpResult<Response> for JsonResult<T>
+impl<T: Serialize> HttpResult<Response> for JsonResult<T>
 { 
-    fn get_res(&self) -> Response 
+    fn get_res(self) -> Response 
     { 
         //to string from serde_json
         let string = match to_string(&self.0) { 
