@@ -1,6 +1,6 @@
 [package]
 name = "rustgram"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 repository = "https://gitlab.com/grammm/rustgram/rustgram"
 authors = ["Jörn Heinemann <joernheinemann@gmx.de>"]

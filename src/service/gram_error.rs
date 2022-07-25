@@ -78,12 +78,12 @@ pub trait GramHttpErr<Res>
 	{
 		http_status_code: u16,
 		api_error_code: u32,
-		msg: &'static str,
+		msg: String,
 	}
 
 	impl HttpErr
 	{
-		pub fn new(http_status_code: u16, api_error_code: u32, msg: &'static str) -> Self
+		pub fn new(http_status_code: u16, api_error_code: u32, msg: String) -> Self
 		{
 			Self {
 				http_status_code,
@@ -95,7 +95,7 @@ pub trait GramHttpErr<Res>
 
 	impl GramHttpErr<Response> for HttpErr
 	{
-		fn get_res(&self) -> Response
+		fn get_res(self) -> Response
 		{
 			let status = match StatusCode::from_u16(self.http_status_code) {
 				Ok(s) => s,
@@ -123,5 +123,5 @@ pub trait GramHttpErr<Res>
 	}
 	```
 	*/
-	fn get_res(&self) -> Res;
+	fn get_res(self) -> Res;
 }

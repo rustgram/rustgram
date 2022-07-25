@@ -1,5 +1,6 @@
 # Rustgram
-##### A lightweight, fast and easy to use http routing and middleware framework build on top of [hyper](https://github.com/hyperium/hyper)
+
+A lightweight, fast and easy to use http routing and middleware framework build on top of [hyper](https://github.com/hyperium/hyper)
 
 ### Features
 - build routes and middleware like Tower services
@@ -306,7 +307,7 @@ impl HttpErr
 
 impl GramHttpErr<Response> for HttpErr
 { 
-    fn get_res(&self) -> Response 
+    fn get_res(self) -> Response 
     { 
         let status = match StatusCode::from_u16(self.http_status_code) { 
             Ok(s) => s, 
