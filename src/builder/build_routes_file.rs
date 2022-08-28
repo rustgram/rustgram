@@ -1,6 +1,6 @@
 use crate::builder::entities::Route;
 
-pub(crate) fn build_routes(routes: Vec<Route>, std_service: Option<String>, std_mw: Option<String>, handler_404: Option<String>) -> String
+pub(crate) fn build_routes(routes: Vec<Route>, std_service: Option<String>, std_mw: Option<String>) -> String
 {
 	let std_service = match std_service {
 		None => String::new(),
@@ -11,17 +11,6 @@ pub(crate) fn build_routes(routes: Vec<Route>, std_service: Option<String>, std_
 		None => String::new(),
 		Some(s) => format!("use crate::{}::*;", s),
 	};
-
-	let route_404 = match handler_404 {
-		Some(h) => h,
-		None => {
-			//TODO system 404 handler
-			//route_404 = format!("Response::new(hyper::Body::from({})), ", "\"404\"");
-			panic!("no 404 handler");
-		},
-	};
-
-	let router_sting = format!("let mut router = Router::new({}); ", route_404);
 
 	//build the routes: router.get("/", r(handler));
 
@@ -43,14 +32,11 @@ use rustgram::{{r, Router}};
 {}
 {}
 
-pub(crate) fn routes() -> Router
+pub(crate) fn routes(router: &mut Router)
 {{
 	{}
-	{}
-
-	router
 }}
 	",
-		std_service, std_mw, router_sting, routes_string
+		std_service, std_mw, routes_string
 	)
 }

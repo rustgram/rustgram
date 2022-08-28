@@ -425,12 +425,10 @@ Create the route file.
 
 ````yaml
 # define the namespace where the route handlers live
-# or leave it emtpy and use the full path to the handler
+# or leave it empty and use the full path to the handler
 base_handler: test_handler
 # define the namespace for the middleware
 base_mw: test_mw
-# the 404 handler. is called when no routes matched the given path
-handler_404: crate::not_found_handler
 # prefix for all routes
 prefix: "/"
 
@@ -504,9 +502,8 @@ use rustgram::{r, Router};
 use crate::test_handler::*;
 use crate::test_mw::*;
 
-pub(crate) fn routes() -> Router
-{ 
-    let mut router = Router::new(crate::not_found_handler);
+pub(crate) fn routes(router: &mut Router)
+{
     router.get("/", r(test_handler::test_handler));
     
     router.put(
@@ -549,7 +546,20 @@ pub(crate) fn routes() -> Router
             .add(mw1_transform)
             .add(mw_transform), 
     );
-    
-    router
+}
+
+//Now the route file can be used like this:
+
+#[tokio::main]
+async fn main()
+{
+   let mut router = Router::new(crate::not_found_handler);
+
+   routes(&mut router);
+
+   let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+
+   //start the app
+   rustgram::start(router, addr).await;
 }
 ````
