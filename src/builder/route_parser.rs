@@ -183,7 +183,7 @@ pub fn start(path_input: String, path_output: String)
 
 	let routes = start_routes_build(&config);
 
-	let file = build_routes(routes, config.base_handler, config.base_mw, config.handler_404);
+	let file = build_routes(routes, config.base_handler, config.base_mw);
 
 	let mut open_file = File::create(path_output).unwrap();
 
