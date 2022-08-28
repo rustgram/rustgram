@@ -1,5 +1,11 @@
 # Rustgram versions
 
+## 0.1.6
+- 2022/08/28
+- change in router builder:
+  - now expect a mut router ref instead of creating a router.
+  - the 404 handler must be set before, not with the route script
+
 ## 0.1.5
 - 2022/07/25
 - use self instead of ref self for `GramHttpErr` trait
