@@ -12,7 +12,7 @@ use std::sync::Arc;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::Server;
 pub use router::route::{r, RouteParams};
-pub use service::gram_error::{GramHttpErr, GramStdHttpErr};
+pub use service::gram_error::GramStdHttpErr;
 
 #[cfg(feature = "route_builder")]
 pub use self::builder::route_parser;
