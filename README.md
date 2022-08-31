@@ -280,11 +280,14 @@ Supported returns are:
 
 The GramStdHttpErr gets converted into a hyper response.
 
-The E where E impl GramHttpErr, will convert via the GramHttpErr trait.
+IntoResponse can be implemented for every type. In this case it is implemented for an error.
+
+If HttpErr is returned, it will be created in a Response from the Error.
 
 ````rust
 use hyper::StatusCode;
-use rustgram::{GramHttpErr, Response, Request};
+use rustgram::{Response, Request};
+use rustgram::service::IntoResponse;
 
 pub struct HttpErr
 { 
@@ -305,9 +308,9 @@ impl HttpErr
     }
 }
 
-impl GramHttpErr<Response> for HttpErr
+impl IntoResponse<Response> for HttpErr
 { 
-    fn get_res(self) -> Response 
+    fn into_response(self) -> Response 
     { 
         let status = match StatusCode::from_u16(self.http_status_code) { 
             Ok(s) => s, 
@@ -338,21 +341,21 @@ pub async fn test_handler_err(_req: Request) -> Result<String, HttpErr>
 
 #### Result<R, E>
 
-R can be any type which implements HttpResult.
+R can be any type which implements IntoResponse.
 
 Example to return a json string:
 
 ````rust
-use rustgram::service::HttpResult;
-use rustgram::{GramHttpErr, Response, Request};
+use rustgram::service::IntoResponse;
+use rustgram::Response;
 use serde::Serialize;
 use serde_json::to_string;
 
 pub struct JsonResult<T: Serialize>(pub T);
 
-impl<T: Serialize> HttpResult<Response> for JsonResult<T>
+impl<T: Serialize> IntoResponse<Response> for JsonResult<T>
 { 
-    fn get_res(self) -> Response 
+    fn into_response(self) -> Response 
     { 
         //to string from serde_json
         let string = match to_string(&self.0) { 
