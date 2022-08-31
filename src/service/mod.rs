@@ -64,8 +64,3 @@ pub trait IntoResponse<Res>
 {
 	fn into_response(self) -> Res;
 }
-
-pub trait HttpResult<Res>
-{
-	fn get_res(self) -> Res;
-}
