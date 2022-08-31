@@ -1,5 +1,9 @@
 # Rustgram versions
 
+## 0.1.7
+- 2022/08/31
+- change handler: now there is no GramErr and Gram Http Result Traits. Use IntoResponse instead.
+
 ## 0.1.6
 - 2022/08/28
 - change in router builder:
