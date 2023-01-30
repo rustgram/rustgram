@@ -1,4 +1,5 @@
 #![doc = include_str!("../README.md")]
+#![allow(clippy::tabs_in_doc_comments)]
 //
 #[cfg(feature = "route_builder")]
 mod builder;

@@ -9,14 +9,14 @@ pub(crate) fn start_routes_build(config: &GramRoute) -> Vec<Route>
 	for c in &config.routes {
 		match c {
 			Config::G(g) => {
-				let route = handle_group(g, &prefix, &config.mw);
+				let route = handle_group(g, prefix.clone(), &config.mw);
 
 				for r in route {
 					routes.push(r);
 				}
 			},
 			e => {
-				let route = handle_route(e, &prefix, &config.mw);
+				let route = handle_route(e, prefix.clone(), &config.mw);
 				routes.push(route);
 			},
 		}
@@ -25,7 +25,7 @@ pub(crate) fn start_routes_build(config: &GramRoute) -> Vec<Route>
 	routes
 }
 
-fn handle_route(route: &Config, prefix: &String, g_mw: &Mw) -> Route
+fn handle_route(route: &Config, prefix: String, g_mw: &Mw) -> Route
 {
 	let path;
 	let method;
@@ -34,43 +34,43 @@ fn handle_route(route: &Config, prefix: &String, g_mw: &Mw) -> Route
 
 	match route {
 		Config::Get(r) => {
-			path = prefix.clone() + &*r.p;
+			path = prefix + &*r.p;
 			mw = r.mw.clone();
 			s = r.s.clone();
 			method = "get";
 		},
 		Config::Post(r) => {
-			path = prefix.clone() + &*r.p;
+			path = prefix + &*r.p;
 			mw = r.mw.clone();
 			s = r.s.clone();
 			method = "post";
 		},
 		Config::Put(r) => {
-			path = prefix.clone() + &*r.p;
+			path = prefix + &*r.p;
 			mw = r.mw.clone();
 			s = r.s.clone();
 			method = "put";
 		},
 		Config::Delete(r) => {
-			path = prefix.clone() + &*r.p;
+			path = prefix + &*r.p;
 			mw = r.mw.clone();
 			s = r.s.clone();
 			method = "delete";
 		},
 		Config::Head(r) => {
-			path = prefix.clone() + &*r.p;
+			path = prefix + &*r.p;
 			mw = r.mw.clone();
 			s = r.s.clone();
 			method = "head";
 		},
 		Config::Options(r) => {
-			path = prefix.clone() + &*r.p;
+			path = prefix + &*r.p;
 			mw = r.mw.clone();
 			s = r.s.clone();
 			method = "options";
 		},
 		Config::Patch(r) => {
-			path = prefix.clone() + &*r.p;
+			path = prefix + &*r.p;
 			mw = r.mw.clone();
 			s = r.s.clone();
 			method = "patch";
@@ -105,7 +105,7 @@ fn handle_route(route: &Config, prefix: &String, g_mw: &Mw) -> Route
 	}
 }
 
-fn handle_group(group: &G, prefix: &String, parent_mw: &Mw) -> Vec<Route>
+fn handle_group(group: &G, prefix: String, parent_mw: &Mw) -> Vec<Route>
 {
 	let mut mw = Vec::new();
 
@@ -125,21 +125,21 @@ fn handle_group(group: &G, prefix: &String, parent_mw: &Mw) -> Vec<Route>
 
 	let mw = Some(mw);
 
-	let prefix = prefix.clone() + &*group.p;
+	let prefix = prefix + &*group.p;
 
 	let mut routes = Vec::new();
 
 	for gr in &group.gr {
 		match gr {
 			Config::G(g) => {
-				let group = handle_group(g, &prefix, &mw);
+				let group = handle_group(g, prefix.clone(), &mw);
 
 				for g in group {
 					routes.push(g);
 				}
 			},
 			e => {
-				let route = handle_route(e, &prefix, &mw);
+				let route = handle_route(e, prefix.clone(), &mw);
 				routes.push(route);
 			},
 		}

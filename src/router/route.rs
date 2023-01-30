@@ -34,11 +34,11 @@ where
 {
 	pub fn new(service: S) -> Self
 	{
-		return Self {
+		Self {
 			handler: service,
 			_req: Default::default(),
 			_res: Default::default(),
-		};
+		}
 	}
 
 	pub fn add<S1, T, Req1, Res1>(self, middleware: T) -> GramRoute<S1, Req1, Res1>

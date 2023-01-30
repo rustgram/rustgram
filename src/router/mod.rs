@@ -12,6 +12,8 @@ pub mod route;
 
 type NonHashMap<T, V> = HashMap<T, V, BuildHasherDefault<NoHashHasher<T>>>;
 
+type RoutesMap<Req, Res> = NonHashMap<u8, NonHashMap<RouteId, Box<dyn Route<Req, Response = Res>>>>;
+
 type RouteId = u64;
 
 pub(crate) struct RouterMatch<'a, Req, Res>
@@ -37,7 +39,7 @@ where
 	Req: Send + Sync + 'static,
 	Res: Send + Sync + 'static,
 {
-	routes: NonHashMap<u8, NonHashMap<RouteId, Box<dyn Route<Req, Response = Res>>>>,
+	routes: RoutesMap<Req, Res>,
 	get_router: matchit::Router<RouteId>,
 	post_router: matchit::Router<RouteId>,
 	put_router: matchit::Router<RouteId>,
@@ -223,16 +225,16 @@ where
 	pub(crate) fn handle_req(&self, method: &Method, path: &str) -> RouterMatch<'_, Req, Res>
 	{
 		//map again because this time we don't need mut ref
-		let (router, used_map) = match method {
-			&Method::GET => (&self.get_router, self.routes.get(&0)),
-			&Method::POST => (&self.post_router, self.routes.get(&1)),
-			&Method::PUT => (&self.put_router, self.routes.get(&2)),
-			&Method::DELETE => (&self.delete_router, self.routes.get(&3)),
-			&Method::PATCH => (&self.patch_router, self.routes.get(&4)),
-			&Method::HEAD => (&self.head_router, self.routes.get(&5)),
-			&Method::OPTIONS => (&self.options_router, self.routes.get(&6)),
-			&Method::CONNECT => (&self.connect_router, self.routes.get(&7)),
-			&Method::TRACE => (&self.trace_router, self.routes.get(&8)),
+		let (router, used_map) = match *method {
+			Method::GET => (&self.get_router, self.routes.get(&0)),
+			Method::POST => (&self.post_router, self.routes.get(&1)),
+			Method::PUT => (&self.put_router, self.routes.get(&2)),
+			Method::DELETE => (&self.delete_router, self.routes.get(&3)),
+			Method::PATCH => (&self.patch_router, self.routes.get(&4)),
+			Method::HEAD => (&self.head_router, self.routes.get(&5)),
+			Method::OPTIONS => (&self.options_router, self.routes.get(&6)),
+			Method::CONNECT => (&self.connect_router, self.routes.get(&7)),
+			Method::TRACE => (&self.trace_router, self.routes.get(&8)),
 			_ => {
 				return RouterMatch {
 					handler: &*self.route_404,
@@ -255,7 +257,7 @@ where
 			Ok(r) => {
 				let params: RouteParams = r.params.into();
 
-				if let Some(route) = map.get(&r.value) {
+				if let Some(route) = map.get(r.value) {
 					RouterMatch {
 						handler: &**route,
 						params,
@@ -287,7 +289,7 @@ mod test
 
 	async fn test_handler(_req: Request) -> String
 	{
-		format!("test")
+		"test".to_string()
 	}
 
 	async fn test_handler_param(req: Request) -> String
@@ -299,13 +301,13 @@ mod test
 
 	async fn test_handler_all(_req: Request) -> String
 	{
-		format!("test_all")
+		"test_all".to_string()
 	}
 
 	#[tokio::test]
 	async fn test_adding_routes_and_match()
 	{
-		let mut router: Router<Request, Response> = Router::new(|_req: Request| async { format!("404") });
+		let mut router: Router<Request, Response> = Router::new(|_req: Request| async { "404".to_string() });
 
 		router.get("/test", r(test_handler));
 

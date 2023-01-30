@@ -30,7 +30,7 @@ where
 	}
 }
 
-impl<'a, S, F: Send + Sync + 'static, S1: Send + Sync + 'static> ServiceTransform<S> for F
+impl<S, F: Send + Sync + 'static, S1: Send + Sync + 'static> ServiceTransform<S> for F
 where
 	S: Service<Request, Output = Response> + Send, //define the return types from the next service
 	F: Fn(S) -> S1,
@@ -75,10 +75,10 @@ impl IntoResponse<Response> for Result<String, GramStdHttpErr>
 {
 	fn into_response(self) -> Response
 	{
-		return match self {
+		match self {
 			Ok(str) => str.into_response(),
 			Err(e) => handle_gram_err(e),
-		};
+		}
 	}
 }
 
@@ -103,8 +103,8 @@ fn handle_gram_err(e: GramStdHttpErr) -> Response
 		Err(_e) => StatusCode::BAD_REQUEST,
 	};
 
-	return hyper::Response::builder()
+	hyper::Response::builder()
 		.status(status)
 		.body(hyper::Body::from(e.msg))
-		.unwrap();
+		.unwrap()
 }
