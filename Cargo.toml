@@ -15,7 +15,7 @@ include = [
 ]
 
 [dependencies]
-hyper = { version = "0.14", features = ["server", "http1", "runtime"] }
+hyper = { version = "^0.14.26", features = ["server", "http1", "runtime"] }
 
 #no hasher to improve hash map
 nohash-hasher = "0.2.0"
@@ -37,4 +37,6 @@ tokio = { version = "1", features = ["full"] }
 futures = { version = "0.3.6", default-features = false, features = ["async-await"] }
 
 [features]
+h2 = ["hyper/http2"]
+
 route_builder = ["serde","serde_yaml"]
