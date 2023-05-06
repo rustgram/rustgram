@@ -24,11 +24,11 @@ nohash-hasher = "0.2.0"
 async-trait = "0.1.53"
 
 # yml handling
-serde_yaml = { version = "0.8", optional = true }
+serde_yaml = { version = "0.9.21", optional = true }
 serde = { version = "1.0", features = ["derive"], optional = true }
 
 # router for matching url
-matchit = "0.5.0"
+matchit = "0.7.0"
 
 [dev-dependencies]
 hyper = { version = "0.14", features = ["server", "http1", "runtime", "stream"] }
