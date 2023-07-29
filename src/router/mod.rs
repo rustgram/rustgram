@@ -1,5 +1,7 @@
 use std::collections::HashMap;
+use std::future::Future;
 use std::hash::BuildHasherDefault;
+use std::pin::Pin;
 
 use hyper::Method;
 use nohash_hasher::NoHashHasher;
@@ -12,16 +14,18 @@ pub mod route;
 
 type NonHashMap<T, V> = HashMap<T, V, BuildHasherDefault<NoHashHasher<T>>>;
 
-type RoutesMap<Req, Res> = NonHashMap<u8, NonHashMap<RouteId, Box<dyn Route<Req, Response = Res>>>>;
+type RoutesMap<Req, Res> = NonHashMap<u8, NonHashMap<RouteId, Box<dyn Route<Req, Response = Res, Future = BoxedFut<Res>>>>>;
 
 type RouteId = u64;
+
+type BoxedFut<Res> = Pin<Box<dyn Future<Output = Res> + Send>>;
 
 pub(crate) struct RouterMatch<'a, Req, Res>
 where
 	Req: Send + Sync + 'static,
 	Res: Send + Sync + 'static,
 {
-	pub handler: &'a dyn Route<Req, Response = Res>,
+	pub handler: &'a dyn Route<Req, Response = Res, Future = BoxedFut<Res>>,
 	pub params: RouteParams,
 }
 
@@ -51,7 +55,7 @@ where
 	trace_router: matchit::Router<RouteId>,
 	latest_route_id: RouteId,
 	prefix: String,
-	route_404: Box<dyn Route<Req, Response = Res>>,
+	route_404: Box<dyn Route<Req, Response = Res, Future = BoxedFut<Res>>>,
 }
 
 impl<Req, Res> Router<Req, Res>
@@ -304,6 +308,11 @@ mod test
 		"test_all".to_string()
 	}
 
+	async fn test_handler_result(_req: Request) -> Result<String, String>
+	{
+		Ok("test".to_string())
+	}
+
 	#[tokio::test]
 	async fn test_adding_routes_and_match()
 	{
@@ -326,7 +335,7 @@ mod test
 		let res_body = res.into_body().next().await.unwrap().unwrap();
 
 		assert_eq!(res_body, "test_all");
-		assert_eq!("/abcdefg", handler.params.get("a").unwrap());
+		assert_eq!("abcdefg", handler.params.get("a").unwrap());
 
 		//match with url param
 		let handler = router.handle_req(&Method::GET, "/test/abcdefg");
@@ -339,5 +348,29 @@ mod test
 		let res_body = res.into_body().next().await.unwrap().unwrap();
 
 		assert_eq!(res_body, "test_param: abcdefg");
+	}
+
+	#[tokio::test]
+	async fn test_result_handler()
+	{
+		let mut router: Router<Request, Response> = Router::new(|_req: Request| async { "404".to_string() });
+
+		router.get("/test", r(test_handler_result));
+
+		router.get("/test/:id", r(test_handler_result));
+
+		router.get("/test/all/*a", r(test_handler_result));
+
+		let handler = router.handle_req(&Method::GET, "/test/all/abcdefg");
+
+		let res = handler
+			.handler
+			.invoke(Request::new(hyper::Body::from("")))
+			.await;
+
+		let res_body = res.into_body().next().await.unwrap().unwrap();
+
+		assert_eq!(res_body, "test");
+		assert_eq!("abcdefg", handler.params.get("a").unwrap());
 	}
 }
