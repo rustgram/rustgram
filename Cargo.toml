@@ -17,9 +17,6 @@ include = [
 [dependencies]
 hyper = { version = "^0.14.26", features = ["server", "http1", "runtime"] }
 
-#no hasher to improve hash map
-nohash-hasher = "0.2.0"
-
 # yml handling
 serde_yaml = { version = "0.9.21", optional = true }
 serde = { version = "1.0", features = ["derive"], optional = true }
