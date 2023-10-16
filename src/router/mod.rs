@@ -334,12 +334,19 @@ mod test
 		}
 	}
 
+	fn test_mw_transform<S>(s: S) -> TestMw<S>
+	{
+		TestMw {
+			inner: Arc::new(s),
+		}
+	}
+
 	#[tokio::test]
 	async fn test_adding_routes_and_match()
 	{
 		let mut router: Router<Request, Response> = Router::new(|_req: Request| async { "404".to_string() });
 
-		router.get("/test", r(test_handler));
+		router.get("/test", r(test_handler).add(test_mw_transform));
 
 		router.get("/test/:id", r(test_handler_param));
 
