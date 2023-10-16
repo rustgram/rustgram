@@ -1,5 +1,4 @@
 use std::future::Future;
-use std::pin::Pin;
 
 use hyper::StatusCode;
 
@@ -17,16 +16,16 @@ where
 	Fut::Output: IntoResponse<Response>,
 {
 	type Output = Response;
-	type Future = Pin<Box<dyn Future<Output = Self::Output> + Send>>;
+	type Future = impl Future<Output = Self::Output> + Send;
 
 	fn call(&self, req: R) -> Self::Future
 	{
 		let res = (self)(req);
 
-		Box::pin(async move {
+		async move {
 			//future
 			res.await.into_response()
-		})
+		}
 	}
 }
 
