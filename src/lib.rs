@@ -1,3 +1,6 @@
+#![allow(incomplete_features)]
+#![feature(async_fn_in_trait, type_alias_impl_trait, return_position_impl_trait_in_trait)]
+//
 #![doc = include_str!("../README.md")]
 #![allow(clippy::tabs_in_doc_comments)]
 //
