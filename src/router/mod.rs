@@ -279,6 +279,8 @@ where
 #[cfg(test)]
 mod test
 {
+	use std::sync::Arc;
+
 	use futures::StreamExt;
 
 	use super::*;
@@ -304,6 +306,32 @@ mod test
 	async fn test_handler_result(_req: Request) -> Result<String, String>
 	{
 		Ok("test".to_string())
+	}
+
+	pub struct TestMw<S>
+	{
+		inner: Arc<S>,
+	}
+
+	impl<S> Service<Request> for TestMw<S>
+	where
+		S: Service<Request, Output = Response>,
+	{
+		type Output = S::Output;
+		type Future = impl Future<Output = Self::Output>;
+
+		fn call(&self, req: Request) -> Self::Future
+		{
+			let next = self.inner.clone();
+
+			async move {
+				//do something before req
+
+				next.call(req).await
+
+				//do something after
+			}
+		}
 	}
 
 	#[tokio::test]
