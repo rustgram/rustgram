@@ -340,6 +340,41 @@ mod test
 		}
 	}
 
+	/**
+	Mw without arc
+	*/
+	pub struct TestMw1<S>
+	{
+		inner: S,
+	}
+
+	impl<S> Service<Request> for TestMw1<S>
+	where
+		S: Service<Request, Output = Response>,
+	{
+		type Output = S::Output;
+
+		fn call(&self, req: Request) -> impl Future<Output = Self::Output> + Send + 'static
+		{
+			let res = self.inner.call(req);
+
+			async move {
+				//do something before req
+
+				res.await
+
+				//do something after
+			}
+		}
+	}
+
+	fn test_mw_transform1<S>(s: S) -> TestMw1<S>
+	{
+		TestMw1 {
+			inner: s,
+		}
+	}
+
 	#[tokio::test]
 	async fn test_adding_routes_and_match()
 	{
@@ -347,7 +382,7 @@ mod test
 
 		router.get("/test", r(test_handler).add(test_mw_transform));
 
-		router.get("/test/:id", r(test_handler_param));
+		router.get("/test/:id", r(test_handler_param).add(test_mw_transform1));
 
 		router.get("/test/all/*a", r(test_handler_all));
 
