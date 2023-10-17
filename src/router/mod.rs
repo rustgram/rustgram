@@ -318,9 +318,8 @@ mod test
 		S: Service<Request, Output = Response>,
 	{
 		type Output = S::Output;
-		type Future = impl Future<Output = Self::Output>;
 
-		fn call(&self, req: Request) -> Self::Future
+		fn call(&self, req: Request) -> impl Future<Output = Self::Output> + Send + 'static
 		{
 			let next = self.inner.clone();
 

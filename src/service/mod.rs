@@ -26,9 +26,8 @@ The only purpose is to get the request and return a response.
 pub trait Service<R>: Send + Sync + 'static
 {
 	type Output;
-	type Future: Future<Output = Self::Output> + Send;
 
-	fn call(&self, req: R) -> Self::Future;
+	fn call(&self, req: R) -> impl Future<Output = Self::Output> + Send + 'static;
 }
 
 /**

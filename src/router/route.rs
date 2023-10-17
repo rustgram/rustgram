@@ -59,7 +59,6 @@ where
 impl<S, Req, Res> Route<Req> for GramRoute<S, Req, Res>
 where
 	S: Service<Req, Output = Res>,
-	S::Future: 'static,
 	Req: Send + Sync,
 	Res: Send + Sync,
 {

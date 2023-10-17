@@ -16,9 +16,8 @@ where
 	Fut::Output: IntoResponse<Response>,
 {
 	type Output = Response;
-	type Future = impl Future<Output = Self::Output> + Send;
 
-	fn call(&self, req: R) -> Self::Future
+	fn call(&self, req: R) -> impl Future<Output = Self::Output> + Send + 'static
 	{
 		let res = (self)(req);
 
