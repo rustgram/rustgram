@@ -69,10 +69,7 @@ where
 	{
 		let res = self.handler.call(req);
 
-		Box::pin(async move {
-			//future
-			res.await
-		})
+		Box::pin(res)
 	}
 }
 
