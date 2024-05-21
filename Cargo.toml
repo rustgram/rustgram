@@ -1,6 +1,6 @@
 [package]
 name = "rustgram"
-version = "0.1.8"
+version = "0.2.0"
 edition = "2021"
 repository = "https://gitlab.com/grammm/rustgram/rustgram"
 authors = ["Jörn Heinemann <joernheinemann@gmx.de>"]
@@ -16,12 +16,6 @@ include = [
 
 [dependencies]
 hyper = { version = "^0.14.26", features = ["server", "http1", "runtime"] }
-
-#no hasher to improve hash map
-nohash-hasher = "0.2.0"
-
-# for handler to use async function in trait
-async-trait = "0.1.53"
 
 # yml handling
 serde_yaml = { version = "0.9.21", optional = true }
@@ -39,4 +33,4 @@ futures = { version = "0.3.6", default-features = false, features = ["async-awai
 [features]
 h2 = ["hyper/http2"]
 
-route_builder = ["serde","serde_yaml"]
+route_builder = ["serde", "serde_yaml"]

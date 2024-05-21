@@ -1,5 +1,4 @@
 use std::future::Future;
-use std::pin::Pin;
 
 use hyper::StatusCode;
 
@@ -17,16 +16,15 @@ where
 	Fut::Output: IntoResponse<Response>,
 {
 	type Output = Response;
-	type Future = Pin<Box<dyn Future<Output = Self::Output> + Send>>;
 
-	fn call(&self, req: R) -> Self::Future
+	fn call(&self, req: R) -> impl Future<Output = Self::Output> + Send + 'static
 	{
-		let res = (self)(req);
+		let res = self(req);
 
-		Box::pin(async move {
+		async move {
 			//future
 			res.await.into_response()
-		})
+		}
 	}
 }
 
@@ -40,7 +38,7 @@ where
 
 	fn transform(&self, inner: S) -> Self::Service
 	{
-		(self)(inner)
+		self(inner)
 	}
 }
 
@@ -98,10 +96,7 @@ where
 
 fn handle_gram_err(e: GramStdHttpErr) -> Response
 {
-	let status = match StatusCode::from_u16(e.status) {
-		Ok(s) => s,
-		Err(_e) => StatusCode::BAD_REQUEST,
-	};
+	let status = StatusCode::from_u16(e.status).unwrap_or(StatusCode::BAD_REQUEST);
 
 	hyper::Response::builder()
 		.status(status)

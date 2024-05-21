@@ -1,8 +1,7 @@
-use std::collections::HashMap;
-use std::hash::BuildHasherDefault;
+use std::future::Future;
+use std::pin::Pin;
 
 use hyper::Method;
-use nohash_hasher::NoHashHasher;
 
 use crate::router::route::{GramRoute, Route};
 use crate::service::Service;
@@ -10,18 +9,18 @@ use crate::RouteParams;
 
 pub mod route;
 
-type NonHashMap<T, V> = HashMap<T, V, BuildHasherDefault<NoHashHasher<T>>>;
+type RouteVec<Req, Res> = Vec<Box<dyn Route<Req, Response = Res, Future = BoxedFut<Res>>>>;
 
-type RoutesMap<Req, Res> = NonHashMap<u8, NonHashMap<RouteId, Box<dyn Route<Req, Response = Res>>>>;
+type RouteId = usize;
 
-type RouteId = u64;
+type BoxedFut<Res> = Pin<Box<dyn Future<Output = Res> + Send>>;
 
 pub(crate) struct RouterMatch<'a, Req, Res>
 where
 	Req: Send + Sync + 'static,
 	Res: Send + Sync + 'static,
 {
-	pub handler: &'a dyn Route<Req, Response = Res>,
+	pub handler: &'a dyn Route<Req, Response = Res, Future = BoxedFut<Res>>,
 	pub params: RouteParams,
 }
 
@@ -39,7 +38,6 @@ where
 	Req: Send + Sync + 'static,
 	Res: Send + Sync + 'static,
 {
-	routes: RoutesMap<Req, Res>,
 	get_router: matchit::Router<RouteId>,
 	post_router: matchit::Router<RouteId>,
 	put_router: matchit::Router<RouteId>,
@@ -49,9 +47,20 @@ where
 	head_router: matchit::Router<RouteId>,
 	connect_router: matchit::Router<RouteId>,
 	trace_router: matchit::Router<RouteId>,
+
 	latest_route_id: RouteId,
 	prefix: String,
-	route_404: Box<dyn Route<Req, Response = Res>>,
+	route_404: Box<dyn Route<Req, Response = Res, Future = BoxedFut<Res>>>,
+
+	routes_get: RouteVec<Req, Res>,
+	routes_post: RouteVec<Req, Res>,
+	routes_put: RouteVec<Req, Res>,
+	routes_patch: RouteVec<Req, Res>,
+	routes_delete: RouteVec<Req, Res>,
+	routes_options: RouteVec<Req, Res>,
+	routes_head: RouteVec<Req, Res>,
+	routes_connect: RouteVec<Req, Res>,
+	routes_trace: RouteVec<Req, Res>,
 }
 
 impl<Req, Res> Router<Req, Res>
@@ -64,8 +73,6 @@ where
 		S: Service<Req, Output = Res>,
 	{
 		Self {
-			routes: HashMap::with_hasher(BuildHasherDefault::default()),
-
 			get_router: matchit::Router::<RouteId>::new(),
 			post_router: matchit::Router::<RouteId>::new(),
 			put_router: matchit::Router::<RouteId>::new(),
@@ -78,6 +85,16 @@ where
 			prefix: "".to_string(),
 			latest_route_id: 0,
 			route_404: Box::new(GramRoute::new(route_404)),
+
+			routes_get: vec![],
+			routes_post: vec![],
+			routes_put: vec![],
+			routes_patch: vec![],
+			routes_delete: vec![],
+			routes_options: vec![],
+			routes_head: vec![],
+			routes_connect: vec![],
+			routes_trace: vec![],
 		}
 	}
 
@@ -92,35 +109,25 @@ where
 		S: Service<Req, Output = Res>,
 	{
 		let path = self.prefix.to_string() + path;
-		self.latest_route_id += 1;
 
 		let (router, used_map) = match method {
-			Method::GET => (&mut self.get_router, 0_u8),
-			Method::POST => (&mut self.post_router, 1_u8),
-			Method::PUT => (&mut self.put_router, 2_u8),
-			Method::DELETE => (&mut self.delete_router, 3_u8),
-			Method::PATCH => (&mut self.patch_router, 4_u8),
-			Method::HEAD => (&mut self.head_router, 5_u8),
-			Method::OPTIONS => (&mut self.options_router, 6_u8),
-			Method::CONNECT => (&mut self.connect_router, 7_u8),
-			Method::TRACE => (&mut self.trace_router, 8_u8),
+			Method::GET => (&mut self.get_router, &mut self.routes_get),
+			Method::POST => (&mut self.post_router, &mut self.routes_post),
+			Method::PUT => (&mut self.put_router, &mut self.routes_put),
+			Method::DELETE => (&mut self.delete_router, &mut self.routes_delete),
+			Method::PATCH => (&mut self.patch_router, &mut self.routes_patch),
+			Method::HEAD => (&mut self.head_router, &mut self.routes_head),
+			Method::OPTIONS => (&mut self.options_router, &mut self.routes_options),
+			Method::CONNECT => (&mut self.connect_router, &mut self.routes_connect),
+			Method::TRACE => (&mut self.trace_router, &mut self.routes_trace),
 			_ => panic!("wrong http method"),
 		};
 
 		router.insert(path, self.latest_route_id).unwrap();
 
-		if self.routes.get(&used_map).is_none() {
-			//init the hash map for this method
-			let route_map = HashMap::with_hasher(BuildHasherDefault::default());
+		used_map.insert(self.latest_route_id, Box::new(route));
 
-			//need primitive types for non hasher
-			self.routes.insert(used_map, route_map);
-		}
-
-		match self.routes.get_mut(&used_map) {
-			Some(m) => m.insert(self.latest_route_id, Box::new(route)),
-			None => panic!("Route insert failed"),
-		};
+		self.latest_route_id += 1;
 	}
 
 	/**
@@ -225,16 +232,16 @@ where
 	pub(crate) fn handle_req(&self, method: &Method, path: &str) -> RouterMatch<'_, Req, Res>
 	{
 		//map again because this time we don't need mut ref
-		let (router, used_map) = match *method {
-			Method::GET => (&self.get_router, self.routes.get(&0)),
-			Method::POST => (&self.post_router, self.routes.get(&1)),
-			Method::PUT => (&self.put_router, self.routes.get(&2)),
-			Method::DELETE => (&self.delete_router, self.routes.get(&3)),
-			Method::PATCH => (&self.patch_router, self.routes.get(&4)),
-			Method::HEAD => (&self.head_router, self.routes.get(&5)),
-			Method::OPTIONS => (&self.options_router, self.routes.get(&6)),
-			Method::CONNECT => (&self.connect_router, self.routes.get(&7)),
-			Method::TRACE => (&self.trace_router, self.routes.get(&8)),
+		let (router, map) = match *method {
+			Method::GET => (&self.get_router, &self.routes_get),
+			Method::POST => (&self.post_router, &self.routes_post),
+			Method::PUT => (&self.put_router, &self.routes_put),
+			Method::DELETE => (&self.delete_router, &self.routes_delete),
+			Method::PATCH => (&self.patch_router, &self.routes_patch),
+			Method::HEAD => (&self.head_router, &self.routes_head),
+			Method::OPTIONS => (&self.options_router, &self.routes_options),
+			Method::CONNECT => (&self.connect_router, &self.routes_connect),
+			Method::TRACE => (&self.trace_router, &self.routes_trace),
 			_ => {
 				return RouterMatch {
 					handler: &*self.route_404,
@@ -243,21 +250,11 @@ where
 			},
 		};
 
-		let map = match used_map {
-			None => {
-				return RouterMatch {
-					handler: &*self.route_404,
-					params: RouteParams::new(),
-				}
-			},
-			Some(m) => m,
-		};
-
 		match router.at(path) {
 			Ok(r) => {
 				let params: RouteParams = r.params.into();
 
-				if let Some(route) = map.get(r.value) {
+				if let Some(route) = map.get(*r.value) {
 					RouterMatch {
 						handler: &**route,
 						params,
@@ -282,6 +279,8 @@ where
 #[cfg(test)]
 mod test
 {
+	use std::sync::Arc;
+
 	use futures::StreamExt;
 
 	use super::*;
@@ -304,14 +303,86 @@ mod test
 		"test_all".to_string()
 	}
 
+	async fn test_handler_result(_req: Request) -> Result<String, String>
+	{
+		Ok("test".to_string())
+	}
+
+	pub struct TestMw<S>
+	{
+		inner: Arc<S>,
+	}
+
+	impl<S> Service<Request> for TestMw<S>
+	where
+		S: Service<Request, Output = Response>,
+	{
+		type Output = S::Output;
+
+		fn call(&self, req: Request) -> impl Future<Output = Self::Output> + Send + 'static
+		{
+			let next = self.inner.clone();
+
+			async move {
+				//do something before req
+
+				next.call(req).await
+
+				//do something after
+			}
+		}
+	}
+
+	fn test_mw_transform<S>(s: S) -> TestMw<S>
+	{
+		TestMw {
+			inner: Arc::new(s),
+		}
+	}
+
+	/**
+	Mw without arc
+	*/
+	pub struct TestMw1<S>
+	{
+		inner: S,
+	}
+
+	impl<S> Service<Request> for TestMw1<S>
+	where
+		S: Service<Request, Output = Response>,
+	{
+		type Output = S::Output;
+
+		fn call(&self, req: Request) -> impl Future<Output = Self::Output> + Send + 'static
+		{
+			let res = self.inner.call(req);
+
+			async move {
+				//do something before req
+
+				res.await
+
+				//do something after
+			}
+		}
+	}
+
+	fn test_mw_transform1<S>(s: S) -> TestMw1<S>
+	{
+		TestMw1 {
+			inner: s,
+		}
+	}
+
 	#[tokio::test]
 	async fn test_adding_routes_and_match()
 	{
 		let mut router: Router<Request, Response> = Router::new(|_req: Request| async { "404".to_string() });
 
-		router.get("/test", r(test_handler));
+		router.get("/test", r(test_handler).add(test_mw_transform));
 
-		router.get("/test/:id", r(test_handler_param));
+		router.get("/test/:id", r(test_handler_param).add(test_mw_transform1));
 
 		router.get("/test/all/*a", r(test_handler_all));
 
@@ -326,7 +397,7 @@ mod test
 		let res_body = res.into_body().next().await.unwrap().unwrap();
 
 		assert_eq!(res_body, "test_all");
-		assert_eq!("/abcdefg", handler.params.get("a").unwrap());
+		assert_eq!("abcdefg", handler.params.get("a").unwrap());
 
 		//match with url param
 		let handler = router.handle_req(&Method::GET, "/test/abcdefg");
@@ -339,5 +410,29 @@ mod test
 		let res_body = res.into_body().next().await.unwrap().unwrap();
 
 		assert_eq!(res_body, "test_param: abcdefg");
+	}
+
+	#[tokio::test]
+	async fn test_result_handler()
+	{
+		let mut router: Router<Request, Response> = Router::new(|_req: Request| async { "404".to_string() });
+
+		router.get("/test", r(test_handler_result));
+
+		router.get("/test/:id", r(test_handler_result));
+
+		router.get("/test/all/*a", r(test_handler_result));
+
+		let handler = router.handle_req(&Method::GET, "/test/all/abcdefg");
+
+		let res = handler
+			.handler
+			.invoke(Request::new(hyper::Body::from("")))
+			.await;
+
+		let res_body = res.into_body().next().await.unwrap().unwrap();
+
+		assert_eq!(res_body, "test");
+		assert_eq!("abcdefg", handler.params.get("a").unwrap());
 	}
 }

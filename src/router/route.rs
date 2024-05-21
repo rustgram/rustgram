@@ -1,16 +1,16 @@
 use std::collections::HashMap;
+use std::future::Future;
 use std::marker::PhantomData;
-
-use async_trait::async_trait;
+use std::pin::Pin;
 
 use crate::service::{Service, ServiceTransform};
 
-#[async_trait]
 pub(crate) trait Route<Req>: Send + Sync
 {
 	type Response;
+	type Future: Future<Output = Self::Response> + Send;
 
-	async fn invoke(&self, req: Req) -> Self::Response;
+	fn invoke(&self, req: Req) -> Self::Future;
 }
 
 //__________________________________________________________________________________________________
@@ -56,7 +56,6 @@ where
 	}
 }
 
-#[async_trait]
 impl<S, Req, Res> Route<Req> for GramRoute<S, Req, Res>
 where
 	S: Service<Req, Output = Res>,
@@ -64,10 +63,13 @@ where
 	Res: Send + Sync,
 {
 	type Response = Res;
+	type Future = Pin<Box<dyn Future<Output = Self::Response> + Send>>;
 
-	async fn invoke(&self, req: Req) -> Self::Response
+	fn invoke(&self, req: Req) -> Self::Future
 	{
-		self.handler.call(req).await
+		let res = self.handler.call(req);
+
+		Box::pin(res)
 	}
 }
 
