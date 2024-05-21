@@ -19,7 +19,7 @@ where
 
 	fn call(&self, req: R) -> impl Future<Output = Self::Output> + Send + 'static
 	{
-		let res = (self)(req);
+		let res = self(req);
 
 		async move {
 			//future
@@ -38,7 +38,7 @@ where
 
 	fn transform(&self, inner: S) -> Self::Service
 	{
-		(self)(inner)
+		self(inner)
 	}
 }
 
@@ -96,10 +96,7 @@ where
 
 fn handle_gram_err(e: GramStdHttpErr) -> Response
 {
-	let status = match StatusCode::from_u16(e.status) {
-		Ok(s) => s,
-		Err(_e) => StatusCode::BAD_REQUEST,
-	};
+	let status = StatusCode::from_u16(e.status).unwrap_or(StatusCode::BAD_REQUEST);
 
 	hyper::Response::builder()
 		.status(status)

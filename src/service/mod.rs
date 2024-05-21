@@ -18,7 +18,7 @@ The only purpose is to get the request and return a response.
 - This functions can just be used out of the box, no change is needed.
 - A function can return a Response, String, &'static str, Result<String, GramStdHttpErr> or Result<String, E>
 - Automatic error handling:
-	- when returning an Err(GramStdHttpErr) this is turned into a Response with an http error code.
+	- when returning an Err(GramStdHttpErr) this is turned into a Response with a http error code.
 	- when returning Err(E) where E impl GramHttpErr, then a custom Error response can be created and get returned by the function
 	- see gram_err for more details
 
