@@ -1,12 +1,15 @@
 # Rustgram
 
-A lightweight, fast and easy to use http routing and middleware framework build on top of [hyper](https://github.com/hyperium/hyper)
+A lightweight, fast and easy to use http routing and middleware framework build on top
+of [hyper](https://github.com/hyperium/hyper)
 
 ### Features
+
 - build routes and middleware like Tower services
 - uses yaml files to define routes
 
 ### Install in `Cargo.toml`
+
 ````toml
 [dependencies]
 # hyper when using Statuscode
@@ -32,33 +35,33 @@ rustgram = "0.1"
 
 ````rust
 use hyper::StatusCode;
-use rustgram::{r, Router, Request,Response};
+use rustgram::{r, Router, Request, Response};
 use std::net::SocketAddr;
 
 async fn not_found_handler(_req: Request) -> Response
-{ 
-    return hyper::Response::builder()
-        .status(StatusCode::NOT_FOUND)
-        .body("Not found".into())
-        .unwrap();
+{
+	return hyper::Response::builder()
+		.status(StatusCode::NOT_FOUND)
+		.body("Not found".into())
+		.unwrap();
 }
 
 pub async fn test_handler(_req: Request) -> String
-{ 
-    format!("test called")
+{
+	format!("test called")
 }
 
 #[tokio::main]
 async fn main()
-{ 
-    let mut router = Router::new(crate::not_found_handler);
-    router.get("/", r(test_handler));
-    router.get("/api", r(test_handler));
-    
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-    
-    //start the app
-    rustgram::start(router, addr).await;
+{
+	let mut router = Router::new(crate::not_found_handler);
+	router.get("/", r(test_handler));
+	router.get("/api", r(test_handler));
+
+	let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+
+	//start the app
+	rustgram::start(router, addr).await;
 }
 ````
 
@@ -80,91 +83,90 @@ use rustgram::{Request, Response};
 
 //define a middleware service
 pub struct Middleware<S>
-{ 
-    inner: S,   //space the inner service to call it later
+{
+	inner: S,   //space the inner service to call it later
 }
 
-impl<S> Service<Request> for Middleware<S> 
-where 
-    S: Service<Request, Output = Response>, //define the return types from the next service
+impl<S> Service<Request> for Middleware<S>
+	where
+		S: Service<Request, Output=Response>, //define the return types from the next service
 {
 	type Output = S::Output;
-	type Future = S::Future;
-    
-    fn call(&self, req: Request) -> Self::Future 
-    {
+
+	fn call(&self, req: Request) -> impl Future<Output=Self::Output> + Send + 'static
+	{
 		// before the request handler from the router is called
-        self.inner.call(req)  //call the next handler 
+		self.inner.call(req)  //call the next handler 
 		// after the request handler is called with the response 
-    }
+	}
 }
 
 //define a middleware transform
 pub struct MiddlewareTransform;
 
-impl<S> ServiceTransform<S> for MiddlewareTransform 
-where 
-    S: Service<Request, Output = Response>, //define the return types from the next service
-{ 
-    type Service = Middleware<S>;
-    
-    fn transform(&self, inner: S) -> Self::Service 
-    { 
-        Middleware { 
-            inner, 
-        } 
-    }
+impl<S> ServiceTransform<S> for MiddlewareTransform
+	where
+		S: Service<Request, Output=Response>, //define the return types from the next service
+{
+	type Service = Middleware<S>;
+
+	fn transform(&self, inner: S) -> Self::Service
+	{
+		Middleware {
+			inner,
+		}
+	}
 }
 
 //or define a middleware transform with a function
 pub fn middleware_transform<S>(inner: S) -> Middleware<S>
-{ 
-    Middleware { 
-        inner, 
-    }
+{
+	Middleware {
+		inner,
+	}
 }
 
 async fn not_found_handler(_req: Request) -> Response
-{ 
-    return hyper::Response::builder()
-        .status(StatusCode::NOT_FOUND)
-        .body("Not found".into())
-        .unwrap();
+{
+	return hyper::Response::builder()
+		.status(StatusCode::NOT_FOUND)
+		.body("Not found".into())
+		.unwrap();
 }
 
 pub async fn test_handler(_req: Request) -> String
-{ 
-    format!("test called")
+{
+	format!("test called")
 }
 
 //Apply a middleware to a route after the r function
 
 #[tokio::main]
 async fn main()
-{ 
-    let mut router = Router::new(crate::not_found_handler);
-    router.get("/", r(test_handler)
-        .add(middleware_transform)
-    );
-    
-    router.get("/api", r(test_handler)
-        .add(MiddlewareTransform)
-    );
-    
-    //apply multiple middleware to a route
-    router.get("/multiple", r(test_handler)
-        .add(MiddlewareTransform)   //then this at last
-        .add(middleware_transform)  //then this ^
-        .add(middleware_transform)  //then this ^
-        .add(middleware_transform)  //then this ^
-        .add(middleware_transform)  //then this ^
-        .add(middleware_transform)  //this is called first ^
-    );
-    
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-    
-    //start the app
-    rustgram::start(router, addr).await;
+{
+	let mut router = Router::new(crate::not_found_handler);
+	router.get("/", r(test_handler)
+		.add(middleware_transform)
+	);
+
+	router.get("/api", r(test_handler)
+		.add(MiddlewareTransform)
+	);
+
+	//apply multiple middleware to a route
+	router.get("/multiple", r(test_handler)
+		.add(MiddlewareTransform)   //then this at last
+		.add(middleware_transform)  //then this ^
+		.add(middleware_transform)  //then this ^
+		.add(middleware_transform)  //then this ^
+		.add(middleware_transform)  //then this ^
+		.add(middleware_transform)  //this is called first ^
+	);
+
+	let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+
+	//start the app
+	rustgram::start(router, addr).await;
 }
 ````
 
@@ -181,7 +183,6 @@ When calling async actions before the response, here Arc is needed to avoid life
 
 ````rust
 use std::future::Future;
-use std::pin::Pin;
 use std::sync::Arc;
 
 use rustgram::service::{Service, ServiceTransform};
@@ -192,32 +193,31 @@ pub struct Middleware<S>
 	inner: Arc<S>,   //use Arc here to avoid lifetime issues
 }
 
-impl<S> Service<Request> for Middleware<S> 
-where 
-    S: Service<Request, Output = Response>,
-{ 
-    type Output = S::Output;
-    type Future = Pin<Box<dyn Future<Output = Self::Output> + Send>>;
-    
-    fn call(&self, req: Request) -> Self::Future 
-    { 
-        //must clone the service to call it in the async move block. (we are cloning the arc ref, to avoid lifetime issues)
-        let next = self.inner.clone();
-        
-        Box::pin(async move { 
-            //do async fn before req
-            
-            next.call(req).await 
-            //do async fn after req 
-        }) 
-    }
+impl<S> Service<Request> for Middleware<S>
+	where
+		S: Service<Request, Output=Response>,
+{
+	type Output = S::Output;
+
+	fn call(&self, req: Request) -> impl Future<Output=Self::Output> + Send + 'static
+	{
+		//must clone the service to call it in the async move block. (we are cloning the arc ref, to avoid lifetime issues)
+		let next = self.inner.clone();
+
+		async move {
+			//do async fn before req
+
+			next.call(req).await
+			//do async fn after req 
+		}
+	}
 }
 
 pub fn mw_transform<S>(inner: S) -> Middleware<S>
 {
-	Middleware { 
-        inner: Arc::new(inner), //use Arc here!
-    }
+	Middleware {
+		inner: Arc::new(inner), //use Arc here!
+	}
 }
 ````
 
@@ -225,7 +225,6 @@ Only after response async action:
 
 ````rust
 use std::future::Future;
-use std::pin::Pin;
 
 use rustgram::service::{Service, ServiceTransform};
 use rustgram::{Request, Response};
@@ -237,40 +236,41 @@ pub struct Middleware<S>
 
 impl<S> Service<Request> for Middleware<S>
 	where
-		S: Service<Request, Output = Response>,
-{ 
-    type Output = S::Output;
-    type Future = Pin<Box<dyn Future<Output = Self::Output> + Send>>;
-    
-    fn call(&self, req: Request) -> Self::Future 
-    { 
-        //no Arc cloning needed because we move the feature into the async block
-        //but change the req is not possible here
-        let res = self.inner.call(req);
-        
-        Box::pin(async move { 
-            let res = res.await; 
-            //do async fn after req 
-            
-            res
-        }) 
-    }
+		S: Service<Request, Output=Response>,
+{
+	type Output = S::Output;
+
+	fn call(&self, req: Request) -> impl Future<Output=Self::Output> + Send + 'static
+	{
+		//no Arc cloning needed because we move the feature into the async block
+		//but change the req is not possible here
+		let res = self.inner.call(req);
+
+		async move {
+			let res = res.await;
+			//do async fn after req 
+
+			res
+		}
+	}
 }
 
 pub fn mw_transform<S>(inner: S) -> Middleware<S>
 {
-	Middleware { 
-        inner, //no Arc here!
-    }
+	Middleware {
+		inner, //no Arc here!
+	}
 }
 ````
 
 ### Handler return and error handling
+
 The router only uses Service traits. For normal functions and closure, this is already implemented.
 
 The functions don't need to return a Hyper Response, but their return gets converted into hyper response.
 
 Supported returns are:
+
 - Hyper Response
 - String
 - &'static str
@@ -290,52 +290,52 @@ use rustgram::{Response, Request};
 use rustgram::service::IntoResponse;
 
 pub struct HttpErr
-{ 
-    http_status_code: u16, 
-    api_error_code: u32, 
-    msg: &'static str,
+{
+	http_status_code: u16,
+	api_error_code: u32,
+	msg: &'static str,
 }
 
 impl HttpErr
-{ 
-    pub fn new(http_status_code: u16, api_error_code: u32, msg: &'static str) -> Self 
-    { 
-        Self { 
-            http_status_code, 
-            api_error_code, 
-            msg 
-        } 
-    }
+{
+	pub fn new(http_status_code: u16, api_error_code: u32, msg: &'static str) -> Self
+	{
+		Self {
+			http_status_code,
+			api_error_code,
+			msg
+		}
+	}
 }
 
 impl IntoResponse<Response> for HttpErr
-{ 
-    fn into_response(self) -> Response 
-    { 
-        let status = match StatusCode::from_u16(self.http_status_code) { 
-            Ok(s) => s, 
-            Err(_e) => StatusCode::BAD_REQUEST, 
-        };
-        
-        //the msg for the end user
-        let msg = format!(
-            "{{\"status\": {}, \"error_message\": \"{}\"}}", 
-            self.api_error_code, self.msg
-        );
-        
-        hyper::Response::builder()
-            .status(status)
-            .header("Content-Type", "application/json")
-            .body(hyper::Body::from(msg))
-            .unwrap()
+{
+	fn into_response(self) -> Response
+	{
+		let status = match StatusCode::from_u16(self.http_status_code) {
+			Ok(s) => s,
+			Err(_e) => StatusCode::BAD_REQUEST,
+		};
+
+		//the msg for the end user
+		let msg = format!(
+			"{{\"status\": {}, \"error_message\": \"{}\"}}",
+			self.api_error_code, self.msg
+		);
+
+		hyper::Response::builder()
+			.status(status)
+			.header("Content-Type", "application/json")
+			.body(hyper::Body::from(msg))
+			.unwrap()
 	}
 }
 
 //example usage:
 
 pub async fn test_handler_err(_req: Request) -> Result<String, HttpErr>
-{ 
-    Err(HttpErr::new(400,1,"Input not valid"))
+{
+	Err(HttpErr::new(400, 1, "Input not valid"))
 }
 ````
 
@@ -354,21 +354,21 @@ use serde_json::to_string;
 pub struct JsonResult<T: Serialize>(pub T);
 
 impl<T: Serialize> IntoResponse<Response> for JsonResult<T>
-{ 
-    fn into_response(self) -> Response 
-    { 
-        //to string from serde_json
-        let string = match to_string(&self.0) { 
-            Ok(s) => s, 
-            //the Http err from the previous example
-            Err(_e) => return HttpErr::new(422,1,"Json to string error",None).get_res(), 
-        };
-        
-        hyper::Response::builder()
-            .header("Content-Type", "application/json")
-            .body(string.into())
-            .unwrap() 
-    }
+{
+	fn into_response(self) -> Response
+	{
+		//to string from serde_json
+		let string = match to_string(&self.0) {
+			Ok(s) => s,
+			//the Http err from the previous example
+			Err(_e) => return HttpErr::new(422, 1, "Json to string error", None).get_res(),
+		};
+
+		hyper::Response::builder()
+			.header("Content-Type", "application/json")
+			.body(string.into())
+			.unwrap()
+	}
 }
 
 //in another file
@@ -386,7 +386,8 @@ pub async fn test_handler_json_result(_req: Request) -> Result<JsonResult<Result
 ### Route builder and groups
 
 - groups can only be build by the route builder
-- the builder parses a yml file and create a new route file. this file contains a function which returns a router (to use it later).
+- the builder parses a yml file and create a new route file. this file contains a function which returns a router (to
+  use it later).
 - all routes in a route shares the same middleware and the same prefix
 - nested groups are also possible
 
@@ -414,13 +415,13 @@ Open the main function in `src/main.rs`
 use rustgram::route_parser;
 
 fn main()
-{ 
+{
 //input path: from the root of the current working directory 
 // output path: into the app crate (created via cargo new app)
-    route_parser::start(
-        "routes.yml".to_string(), 
-        "app/src/routes.rs".to_string()
-    );
+	route_parser::start(
+		"routes.yml".to_string(),
+		"app/src/routes.rs".to_string()
+	);
 }
 ````
 
@@ -507,48 +508,48 @@ use crate::test_mw::*;
 
 pub(crate) fn routes(router: &mut Router)
 {
-    router.get("/", r(test_handler::test_handler));
-    
-    router.put(
-        "/", 
-        r(test_handler::test_handler)
-            .add(mw1_transform)
-            .add(mw_transform), 
-    );
-    
-    router.get(
-        "/admin", 
-        r(test_handler_db::test_handler_db_to_json)
-            .add(mw1_transform)
-            .add(mw_transform), 
-    );
-    
-    router.get(
-        "/admin/user/:id", 
-        r(test_handler::test_handler)
-            .add(mw1_transform)
-            .add(mw_transform), 
-    );
-    
-    router.put(
-        "/admin/many_mw", 
-        r(test_handler::test_handler)
-            .add(mw3_transform)
-            .add(mw2_transform)
-            .add(mw1_transform)
-            .add(mw_transform), 
-    );
-    
-    router.put(
-        "/nested/management/put", 
-        r(test_handler::test_handler)
-            .add(mw5_transform)
-            .add(mw4_transform)
-            .add(mw3_transform)
-            .add(mw2_transform)
-            .add(mw1_transform)
-            .add(mw_transform), 
-    );
+	router.get("/", r(test_handler::test_handler));
+
+	router.put(
+		"/",
+		r(test_handler::test_handler)
+			.add(mw1_transform)
+			.add(mw_transform),
+	);
+
+	router.get(
+		"/admin",
+		r(test_handler_db::test_handler_db_to_json)
+			.add(mw1_transform)
+			.add(mw_transform),
+	);
+
+	router.get(
+		"/admin/user/:id",
+		r(test_handler::test_handler)
+			.add(mw1_transform)
+			.add(mw_transform),
+	);
+
+	router.put(
+		"/admin/many_mw",
+		r(test_handler::test_handler)
+			.add(mw3_transform)
+			.add(mw2_transform)
+			.add(mw1_transform)
+			.add(mw_transform),
+	);
+
+	router.put(
+		"/nested/management/put",
+		r(test_handler::test_handler)
+			.add(mw5_transform)
+			.add(mw4_transform)
+			.add(mw3_transform)
+			.add(mw2_transform)
+			.add(mw1_transform)
+			.add(mw_transform),
+	);
 }
 
 //Now the route file can be used like this:
@@ -556,13 +557,13 @@ pub(crate) fn routes(router: &mut Router)
 #[tokio::main]
 async fn main()
 {
-   let mut router = Router::new(crate::not_found_handler);
+	let mut router = Router::new(crate::not_found_handler);
 
-   routes(&mut router);
+	routes(&mut router);
 
-   let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+	let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
 
-   //start the app
-   rustgram::start(router, addr).await;
+	//start the app
+	rustgram::start(router, addr).await;
 }
 ````
