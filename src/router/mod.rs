@@ -48,7 +48,16 @@ where
 	connect_router: matchit::Router<RouteId>,
 	trace_router: matchit::Router<RouteId>,
 
-	latest_route_id: RouteId,
+	latest_route_id_get: RouteId,
+	latest_route_id_post: RouteId,
+	latest_route_id_put: RouteId,
+	latest_route_id_patch: RouteId,
+	latest_route_id_delete: RouteId,
+	latest_route_id_option: RouteId,
+	latest_route_id_head: RouteId,
+	latest_route_id_connect: RouteId,
+	latest_route_id_trace: RouteId,
+
 	prefix: String,
 	route_404: Box<dyn Route<Req, Response = Res, Future = BoxedFut<Res>>>,
 
@@ -82,8 +91,16 @@ where
 			head_router: matchit::Router::<RouteId>::new(),
 			connect_router: matchit::Router::<RouteId>::new(),
 			trace_router: matchit::Router::<RouteId>::new(),
+			latest_route_id_get: 0,
+			latest_route_id_post: 0,
+			latest_route_id_put: 0,
+			latest_route_id_patch: 0,
+			latest_route_id_delete: 0,
+			latest_route_id_option: 0,
+			latest_route_id_head: 0,
+			latest_route_id_connect: 0,
+			latest_route_id_trace: 0,
 			prefix: "".to_string(),
-			latest_route_id: 0,
 			route_404: Box::new(GramRoute::new(route_404)),
 
 			routes_get: vec![],
@@ -110,24 +127,78 @@ where
 	{
 		let path = self.prefix.to_string() + path;
 
-		let (router, used_map) = match method {
-			Method::GET => (&mut self.get_router, &mut self.routes_get),
-			Method::POST => (&mut self.post_router, &mut self.routes_post),
-			Method::PUT => (&mut self.put_router, &mut self.routes_put),
-			Method::DELETE => (&mut self.delete_router, &mut self.routes_delete),
-			Method::PATCH => (&mut self.patch_router, &mut self.routes_patch),
-			Method::HEAD => (&mut self.head_router, &mut self.routes_head),
-			Method::OPTIONS => (&mut self.options_router, &mut self.routes_options),
-			Method::CONNECT => (&mut self.connect_router, &mut self.routes_connect),
-			Method::TRACE => (&mut self.trace_router, &mut self.routes_trace),
+		let (router, used_map, route_id) = match method {
+			Method::GET => {
+				(
+					&mut self.get_router,
+					&mut self.routes_get,
+					&mut self.latest_route_id_get,
+				)
+			},
+			Method::POST => {
+				(
+					&mut self.post_router,
+					&mut self.routes_post,
+					&mut self.latest_route_id_post,
+				)
+			},
+			Method::PUT => {
+				(
+					&mut self.put_router,
+					&mut self.routes_put,
+					&mut self.latest_route_id_put,
+				)
+			},
+			Method::DELETE => {
+				(
+					&mut self.delete_router,
+					&mut self.routes_delete,
+					&mut self.latest_route_id_delete,
+				)
+			},
+			Method::PATCH => {
+				(
+					&mut self.patch_router,
+					&mut self.routes_patch,
+					&mut self.latest_route_id_patch,
+				)
+			},
+			Method::HEAD => {
+				(
+					&mut self.head_router,
+					&mut self.routes_head,
+					&mut self.latest_route_id_head,
+				)
+			},
+			Method::OPTIONS => {
+				(
+					&mut self.options_router,
+					&mut self.routes_options,
+					&mut self.latest_route_id_option,
+				)
+			},
+			Method::CONNECT => {
+				(
+					&mut self.connect_router,
+					&mut self.routes_connect,
+					&mut self.latest_route_id_connect,
+				)
+			},
+			Method::TRACE => {
+				(
+					&mut self.trace_router,
+					&mut self.routes_trace,
+					&mut self.latest_route_id_trace,
+				)
+			},
 			_ => panic!("wrong http method"),
 		};
 
-		router.insert(path, self.latest_route_id).unwrap();
+		router.insert(path, *route_id).unwrap();
 
-		used_map.insert(self.latest_route_id, Box::new(route));
+		used_map.insert(*route_id, Box::new(route));
 
-		self.latest_route_id += 1;
+		*route_id += 1;
 	}
 
 	/**
@@ -382,9 +453,11 @@ mod test
 
 		router.get("/test", r(test_handler).add(test_mw_transform));
 
-		router.get("/test/:id", r(test_handler_param).add(test_mw_transform1));
+		router.post("/test/:id", r(test_handler_param).add(test_mw_transform1));
 
 		router.get("/test/all/*a", r(test_handler_all));
+
+		router.post("/test1/:id", r(test_handler_param).add(test_mw_transform1));
 
 		//match all
 		let handler = router.handle_req(&Method::GET, "/test/all/abcdefg");
@@ -400,7 +473,7 @@ mod test
 		assert_eq!("abcdefg", handler.params.get("a").unwrap());
 
 		//match with url param
-		let handler = router.handle_req(&Method::GET, "/test/abcdefg");
+		let handler = router.handle_req(&Method::POST, "/test/abcdefg");
 
 		let mut req = Request::new(hyper::Body::from(""));
 		req.extensions_mut().insert(handler.params);
