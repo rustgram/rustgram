@@ -1,6 +1,6 @@
 [package]
 name = "rustgram"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 repository = "https://gitlab.com/grammm/rustgram/rustgram"
 authors = ["Jörn Heinemann <joernheinemann@gmx.de>"]
@@ -18,7 +18,7 @@ include = [
 hyper = { version = "^0.14.26", features = ["server", "http1", "runtime"] }
 
 # yml handling
-serde_yaml = { version = "0.9.21", optional = true }
+serde_yaml = { version = "=0.8.26", optional = true }
 serde = { version = "1.0", features = ["derive"], optional = true }
 
 # router for matching url
